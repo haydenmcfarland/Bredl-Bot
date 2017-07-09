@@ -3,18 +3,18 @@ from bredlbot.logger import Logger
 
 
 class BredlBot:
-    def __init__(self, channel, directory):
+    def __init__(self, channel, directory='logs/errors/'):
         self._chat = ChatSocket(channel)
-        self._logger = Logger(directory)
+        self._error_logger = Logger(directory)
 
-    def run(self, twitch_irc=False):
+    def run(self, twitch_irc=True):
         try:
             self._chat.join(twitch_irc=twitch_irc)
+            self._chat.listen()
         except ChatConnectionError as error:
-            self._logger.log(error)
-        self._chat.listen()
+            self._error_logger.log(error)
 
 
 if __name__ == '__main__':
-    bot = BredlBot("GamesDoneQuick", '/logs/')
-    bot.run(twitch_irc=True)
+    bot = BredlBot("dansgaming")
+    bot.run()

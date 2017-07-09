@@ -1957,3 +1957,4 @@ twitchpy_env/tcl/tcl8.6/tzdata/Asia/Kuala_Lumpur
 twitchpy_env/tcl/tcl8.6/tzdata/Asia/Krasnoyarsk
 .idea/
 bredlbot/config.conf
+bredlbot/logs/

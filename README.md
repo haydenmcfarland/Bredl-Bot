@@ -19,11 +19,10 @@ $ python setup.py install
 from bredlbot import BredlBot
 
 if __name__ == '__main__':
-    mod = True
     channel_name = 'my_username'
-    bot = BredlBot(channel_name, mod)
+    bot = BredlBot(channel_name)
     bot.run()
 
 ```
 ## TODO:
-- Implement Mod Capabilities
+- Implement Twitch Specific Commands

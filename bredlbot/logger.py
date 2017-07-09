@@ -1,10 +1,17 @@
-import datetime
+from datetime import datetime
+from os.path import exists, abspath
+from os import makedirs
 
 
 class Logger:
     def __init__(self, directory):
-        self._dir = directory
+        self._dir = abspath(directory)
 
     def log(self, obj_or_message):
-        with open('{}{}.txt'.format(self._dir, datetime.date), 'a') as logs:
-            logs.write('[{}] --- [{}]'.format(obj_or_message, datetime.datetime))
+
+        if not exists(self._dir):
+            makedirs(self._dir)
+
+        with open('{}/{}.txt'.format(self._dir, datetime.now().strftime('%Y_%m_%d')), 'a') as logs:
+            log_template = '{} at {}\r\n'
+            logs.write(log_template.format(obj_or_message, datetime.now().strftime('%H:%M:%S')))
