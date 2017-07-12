@@ -17,7 +17,7 @@ class ChatSocket(BredlBase):
         self._socket = socket()
         self._channel = channel.lower()
         self._buffer = ''
-        self._chat_logger = Logger('logs/chat/')
+        self._chat_logger = Logger('logs/chat/{}/'.format(self._channel))
         self._twitch_irc = False
 
     def _enable_twitch_irc_capabilities(self):
@@ -40,21 +40,18 @@ class ChatSocket(BredlBase):
         self._buffer = messages.pop()
         return messages
 
+    def _ban_user(self, user, reason, duration=''):
+        self._send_privmsg('.timeout {} {} {}'.format(user, reason, duration))
+
     def _process_messages(self, messages):
         for message in messages:
             message = [m.strip() for m in message.split(':')]
+            print(message)
             if message[0] == 'PING':
                 self._send_utf('PONG :{}'.format(message[-1]))
                 continue
-            elif self._twitch_irc:
-                m = re.match(ChatSocket._Const.RE_IRC_PATTERN, message[1])
-                if m:
-                    if m.group(1) == '8by3':
-                        self._send_privmsg("({}) said: {} danGasm".format(m.group(1), message[-1]))
-                    #self._chat_logger.log('{} said {}'.format(m.group(1), message[-1]))
-                    print(message)
             else:
-                continue
+                pass
 
     def join(self, twitch_irc):
         self._socket.connect((self._host, self._port))

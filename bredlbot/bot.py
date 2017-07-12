@@ -13,8 +13,3 @@ class BredlBot:
             self._chat.listen()
         except ChatConnectionError as error:
             self._error_logger.log(error)
-
-
-if __name__ == '__main__':
-    bot = BredlBot("dansgaming")
-    bot.run()
