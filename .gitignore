@@ -1959,3 +1959,4 @@ twitchpy_env/tcl/tcl8.6/tzdata/Asia/Krasnoyarsk
 bredlbot/config.conf
 bredlbot/logs/
 build/
+bredlbot/__pycache__/threaded.cpython-36.pyc

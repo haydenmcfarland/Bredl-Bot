@@ -13,5 +13,5 @@ class Logger:
             makedirs(self._dir)
 
         with open('{}/{}.txt'.format(self._dir, datetime.now().strftime('%Y_%m_%d')), 'a') as logs:
-            log_template = '{} at {}\r\n'
-            logs.write(log_template.format(obj_or_message, datetime.now().strftime('%H:%M:%S')))
+            log_template = 'TIME: [{}] MSG: [{}]\r\n'
+            logs.write(log_template.format(datetime.now().strftime('%H:%M:%S'), obj_or_message))
