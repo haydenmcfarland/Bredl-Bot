@@ -1960,3 +1960,4 @@ bredlbot/config.conf
 bredlbot/logs/
 build/
 bredlbot/__pycache__/threaded.cpython-36.pyc
+bredlbot/__pycache__/

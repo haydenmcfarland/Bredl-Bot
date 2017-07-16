@@ -1,6 +1,7 @@
 from bredlbot.config import BredlBase
 from bredlbot.logger import Logger
 from bredlbot.threaded import RecvThread, SendThread
+import bredlbot.commands as commands
 from socket import socket, error as ChatConnectionError
 import re
 
@@ -34,7 +35,6 @@ class ChatSocket(BredlBase):
     def _enable_twitch_irc_capabilities(self):
         for cap in TWITCH_CAPABILITIES:
             self._send_utf('CAP REQ :twitch.tv/{}'.format(cap))
-        self._twitch_irc = True
 
     def _join(self):
         self._socket.connect((self._host, self._port))
@@ -44,10 +44,17 @@ class ChatSocket(BredlBase):
         if self._twitch_irc:
             self._enable_twitch_irc_capabilities()
 
+    def _append_send_buffer(self, message):
+        self._send_thread.event.clear()
+        self._send_thread.send_buffer.append(message)
+        self._send_thread.event.set()
+
     def _process_messages(self, messages):
         for message in messages:
             if re.match(RE_PING, message):
+                self._send_thread.event.clear()
                 self._send_thread.send_buffer.append('PONG :tmi.twitch.tv')
+                self._send_thread.event.set()
             else:
                 r = re.match(RE_CHAT, message)
                 if r:
@@ -55,17 +62,21 @@ class ChatSocket(BredlBase):
                         chat_msg = '{}: {}'.format(r.group(USER), r.group(TEXT))
                         self._chat_logger.log(chat_msg)
                         if '!hello' in r.group(TEXT):
-                            send_msg = 'Hey {}! Right now all I can do is say hi and create logs, \
-                            but stay tuned for more features.'.format(r.group(USER))
-                            self._send_thread.send_buffer.append(send_msg)
+                            self._append_send_buffer(commands.hello(r.group(USER)))
+                        elif '!' == r.group(TEXT):
+                            self._append_send_buffer(commands.solid())
+                        elif '!dev' in r.group(TEXT):
+                            self._append_send_buffer(commands.dev())
 
     def run(self):
         self._join()
         self._send_thread.start()
         self._recv_thread.start()
         while True:
+            self._recv_thread.event.clear()
             messages_list = self._recv_thread.messages
             self._recv_thread.messages = []
+            self._recv_thread.event.set()
             if messages_list:
                 for messages in messages_list:
-                    self._process_messages(messages)
+                    self._process_messages(messages[-1])
