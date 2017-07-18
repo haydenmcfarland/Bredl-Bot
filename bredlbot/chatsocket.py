@@ -66,6 +66,8 @@ class ChatSocket(BredlBase):
                             self._append_send_buffer(commands.solid())
                         elif '!dev' in r.group(TEXT):
                             self._append_send_buffer(commands.dev())
+                        elif '!roll' == r.group(TEXT):
+                            self._append_send_buffer(commands.roll(r.group(USER)))
 
     def run(self):
         self._join()

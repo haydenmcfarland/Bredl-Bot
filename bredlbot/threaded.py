@@ -1,5 +1,5 @@
 from threading import Thread, Event
-from time import time
+from time import time, sleep
 from dynopy.dynopy import DynoPy, dict_gen
 from datetime import datetime
 
@@ -91,7 +91,6 @@ class SendThread(Thread):
 
 
 WAIT_TIME_FOR_MESSAGES = 60
-DELAY_EACH_COMMIT = 10
 
 
 class LoggerThread(Thread):
@@ -102,7 +101,7 @@ class LoggerThread(Thread):
         self._event = Event()
         self._aws = DynoPy(debug=True)
         try:
-            self._aws.get('Chat', item=self._channel)
+            is_logs = self._aws.get('Chat', item=dict_gen(channel=self._channel), projection="logs.log_date")
         except:
             date = datetime.now().strftime('%Y_%m_%d')
             item = dict_gen(channel=self._channel, logs=dict_gen(log_date=date, messages=['$begin']))
@@ -114,12 +113,13 @@ class LoggerThread(Thread):
     def _commit(self):
         date = datetime.now().strftime('%Y_%m_%d')
         u = "SET logs.messages = list_append(logs.messages, :i)"
-        v = {':i': [self._messages.pop(0)], ':d': date}
+        v = {':i': self._messages, ':d': date}
         c = "logs.log_date = :d"
         self._aws.update('Chat', dict_gen(channel=self._channel), u, v, c, 'UPDATED_NEW')
+        self._messages = []
 
     def run(self):
         while True:
-            time.wait(WAIT_TIME_FOR_MESSAGES)
+            sleep(WAIT_TIME_FOR_MESSAGES)
             while self._messages:
                 self._commit()
