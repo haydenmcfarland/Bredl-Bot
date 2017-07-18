@@ -1,3 +1,6 @@
+from random import randrange()
+
+
 def dev():
     return 'Currently moderation level commands are not implemented. Please stay tuned!'
 
@@ -13,7 +16,11 @@ def solid():
 def banned(user):
     return 'Ssssssayanara {}!'.format(user)
 
+def roll(user):
+    return '{} rolled a {}'.format(user, randrange(1,101))
 
 def molt(user):
     return 'PRIVMSG #jtv :/w {} Let me slip into something more comfortable ;)'.format(user)
+
+
 

@@ -1,6 +1,5 @@
 from bredlbot.config import BredlBase
-from bredlbot.logger import Logger
-from bredlbot.threaded import RecvThread, SendThread
+from bredlbot.threaded import RecvThread, SendThread, LoggerThread
 import bredlbot.commands as commands
 from socket import socket, error as ChatConnectionError
 import re
@@ -26,7 +25,7 @@ class ChatSocket(BredlBase):
         self._channel = channel.lower()
         self._recv_thread = RecvThread(self._socket, self._channel)
         self._send_thread = SendThread(self._socket, self._channel, twitch_irc)
-        self._chat_logger = Logger('logs/chat/{}/'.format(self._channel))
+        self._chat_logger = LoggerThread(self._channel)
         self._twitch_irc = twitch_irc
 
     def _send_utf(self, message):
@@ -70,6 +69,7 @@ class ChatSocket(BredlBase):
 
     def run(self):
         self._join()
+        self._chat_logger.start()
         self._send_thread.start()
         self._recv_thread.start()
         while True:
