@@ -2,7 +2,7 @@ from random import randrange
 
 
 def dev():
-    return 'Currently moderation level commands are not implemented. Please stay tuned!'
+    return '7/23/17: Chat logs are live. Custom and Moderation level commands are not implemented.'
 
 
 def hello(user):

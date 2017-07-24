@@ -1,6 +1,7 @@
 from threading import Thread, Event
 from time import time, sleep
-from dynopy.dynopy import DynoPy, dict_gen
+from dynopy.dynopy import DynoPy
+from dynopy.helper import dict_gen
 from datetime import datetime
 
 CHUNK_SIZE = 1024
@@ -90,7 +91,7 @@ class SendThread(Thread):
             self._process_send_buffer()
 
 
-WAIT_TIME_FOR_MESSAGES = 60
+WAIT_TIME_FOR_MESSAGES = 300
 
 
 class LoggerThread(Thread):
@@ -100,26 +101,48 @@ class LoggerThread(Thread):
         self._messages = []
         self._event = Event()
         self._aws = DynoPy(debug=True)
-        try:
-            is_logs = self._aws.get('Chat', item=dict_gen(channel=self._channel), projection="logs.log_date")
-        except:
-            date = datetime.now().strftime('%Y_%m_%d')
-            item = dict_gen(channel=self._channel, logs=dict_gen(log_date=date, messages=['$begin']))
-            self._aws.put('Chat', item=item)
+        self._debug = False
+        self._create_db_entry()
+        self._add_today_entry()
 
-    def log(self, message):
-        self._messages.append(message)
+    def _add_today_entry(self):
+        date = datetime.utcnow().strftime('%Y_%m_%d')
+        u = 'SET logs.#d = :l, log_dates = list_append(log_dates, :d)'
+        n = {'#d': date}
+        v = {':l': ['$begin'], ':d': [date]}
+        c = 'attribute_not_exists(logs.#d)'
+        response = self._aws.update('Chat', dict_gen(channel=self._channel), u, n, v, c, 'NONE')
+        if self._debug:
+            print(response)
 
-    def _commit(self):
-        date = datetime.now().strftime('%Y_%m_%d')
-        u = "SET logs.messages = list_append(logs.messages, :i)"
-        v = {':i': self._messages, ':d': date}
-        c = "logs.log_date = :d"
-        self._aws.update('Chat', dict_gen(channel=self._channel), u, v, c, 'UPDATED_NEW')
-        self._messages = []
+    def _create_db_entry(self):
+        date = datetime.utcnow().strftime('%Y_%m_%d')
+        c = 'attribute_not_exists(logs)'
+        item = dict_gen(channel=self._channel, logs={date: ['$begin']}, log_dates=[date])
+        response = self._aws.put('Chat', item=item, condition_expression=c)
+        if self._debug:
+            print(response)
+
+    def log(self, message, meta_data):
+        self._messages.append([message, meta_data])
+
+    def _commit_messages(self):
+        date = datetime.utcnow().strftime('%Y_%m_%d')
+        u = "SET logs.#d = list_append(logs.#d, :i)"
+        n = {'#d': date}
+        v = {':i': self._messages}
+        c = "attribute_exists(logs.#d)"
+        response = self._aws.update('Chat', dict_gen(channel=self._channel), u, n, v, c, 'NONE')
+        if self._debug:
+            print(response)
+
+        if response['ResponseMetadata']['HTTPStatusCode'] == 400:
+            self._add_today_entry()
+        elif response['ResponseMetadata']['HTTPStatusCode'] == 200:
+            self._messages = []
 
     def run(self):
         while True:
             sleep(WAIT_TIME_FOR_MESSAGES)
             while self._messages:
-                self._commit()
+                self._commit_messages()
