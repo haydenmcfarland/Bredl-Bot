@@ -20,9 +20,19 @@ class Counter:
         return temp
 
 
-class RecvThread(Thread):
-    def __init__(self, socket, channel):
+class StoppableThread(Thread):
+    def __init__(self, debug=False):
         super().__init__()
+        self._break = False
+        self._debug = debug
+
+    def stop(self):
+        self._break = True
+
+
+class RecvThread(StoppableThread):
+    def __init__(self, socket, channel, debug=False):
+        super().__init__(debug)
         self._counter = Counter()
         self._socket = socket
         self._channel = channel
@@ -42,12 +52,16 @@ class RecvThread(Thread):
 
     def run(self):
         while True:
+            if self._break:
+                if self._debug:
+                    print(' Recv buffer culled.')
+                break
             self._recv_messages()
 
 
-class SendThread(Thread):
-    def __init__(self, socket, channel, twitch_irc):
-        super().__init__()
+class SendThread(StoppableThread):
+    def __init__(self, socket, channel, twitch_irc, debug=False):
+        super().__init__(debug)
         self._socket = socket
         self._channel = channel
         self._start = None
@@ -88,20 +102,23 @@ class SendThread(Thread):
 
     def run(self):
         while True:
+            if self._break:
+                if self._debug:
+                    print(' Send buffer culled.')
+                break
             self._process_send_buffer()
 
 
-WAIT_TIME_FOR_MESSAGES = 300
+WAIT_TIME_FOR_MESSAGES = 120
 
 
-class LoggerThread(Thread):
-    def __init__(self, channel):
-        super().__init__()
+class LoggerThread(StoppableThread):
+    def __init__(self, channel, debug=False):
+        super().__init__(debug)
         self._channel = channel.lower()
         self._messages = []
         self._event = Event()
         self._aws = DynoPy(debug=True)
-        self._debug = False
         self._create_db_entry()
         self._add_today_entry()
 
@@ -146,3 +163,7 @@ class LoggerThread(Thread):
             sleep(WAIT_TIME_FOR_MESSAGES)
             while self._messages:
                 self._commit_messages()
+            if self._break:
+                if self._debug:
+                    print(' Logger culled.')
+                break

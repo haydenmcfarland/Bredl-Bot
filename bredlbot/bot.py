@@ -1,16 +1,13 @@
-from bredlbot.chatsocket import ChatSocket, ChatConnectionError
+from bredlbot.chat_thread import ChatThread
+import time
 
 
-class BredlBot:
-    def __init__(self, channel, log_only=False, twitch_irc=True):
-        self._chat = ChatSocket(channel, log_only, twitch_irc)
-
-    def run(self):
-        try:
-            self._chat.run()
-        except ChatConnectionError as e:
-            print(e)
+class BredlThread(ChatThread):
+    pass
 
 
 if __name__ == '__main__':
-    BredlBot('itmeJP', log_only=False, twitch_irc=True).run()
+    x = BredlThread('BredlBot', log_only=False, twitch_irc=True, debug=True)
+    x.start()
+    time.sleep(5)
+    x.stop()

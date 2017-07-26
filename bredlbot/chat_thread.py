@@ -1,7 +1,7 @@
 from bredlbot.config import BredlBase
-from bredlbot.threaded import RecvThread, SendThread, LoggerThread
+from bredlbot.job_thread import RecvThread, SendThread, LoggerThread, StoppableThread
 import bredlbot.commands as commands
-from socket import socket, error as ChatConnectionError
+from socket import socket, SHUT_WR
 import re
 
 # TWITCH SPECIFIC
@@ -19,18 +19,17 @@ USER = 2
 TWITCH = 1
 
 
-class ChatSocket(BredlBase):
-    def __init__(self, channel, log_only, twitch_irc):
-        super().__init__()
+class ChatThread(StoppableThread, BredlBase):
+    def __init__(self, channel, log_only, twitch_irc, debug=False):
+        StoppableThread.__init__(self, debug=debug)
+        BredlBase.__init__(self)
         self._socket = socket()
         self._channel = channel.lower()
-        self._recv_thread = RecvThread(self._socket, self._channel)
+        self._recv_thread = RecvThread(self._socket, self._channel, debug=debug)
         self._log_only = log_only
-        self._send_thread = SendThread(self._socket, self._channel, twitch_irc)
-        self._chat_logger = LoggerThread(self._channel)
+        self._send_thread = SendThread(self._socket, self._channel, twitch_irc, debug=debug)
+        self._chat_logger = LoggerThread(self._channel, debug=debug)
         self._twitch_irc = twitch_irc
-        self._debug = False
-
 
     def _send_utf(self, message):
         self._socket.send('{}\r\n'.format(message).encode('utf-8'))
@@ -88,6 +87,14 @@ class ChatSocket(BredlBase):
         self._send_thread.start()
         self._recv_thread.start()
         while True:
+            if self._break:
+                self._socket.shutdown(SHUT_WR)
+                self._recv_thread.stop()
+                self._send_thread.stop()
+                self._chat_logger.stop()
+                if self._debug:
+                    print('Terminating {} bot thread.'.format(self._channel))
+                break
             self._recv_thread.event.clear()
             messages_list = self._recv_thread.messages
             self._recv_thread.messages = []
@@ -95,3 +102,7 @@ class ChatSocket(BredlBase):
             if messages_list:
                 for messages in messages_list:
                     self._process_messages(messages[-1])
+        self._recv_thread.join()
+        self._send_thread.join()
+        self._chat_logger.join()
+        self._socket.close()
