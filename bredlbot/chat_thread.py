@@ -46,6 +46,21 @@ class ChatThread(StoppableThread, BredlBase):
         if self._twitch_irc:
             self._enable_twitch_irc_capabilities()
 
+    def _start_threads(self):
+        self._chat_logger.start()
+        self._send_thread.start()
+        self._recv_thread.start()
+
+    def _stop_threads(self):
+        self._recv_thread.stop()
+        self._send_thread.stop()
+        self._chat_logger.stop()
+
+    def _join_threads(self):
+        self._recv_thread.join()
+        self._send_thread.join()
+        self._chat_logger.join()
+
     def _append_send_buffer(self, message):
         self._send_thread.event.clear()
         self._send_thread.send_buffer.append(message)
@@ -72,26 +87,22 @@ class ChatThread(StoppableThread, BredlBase):
                         meta_data = self._generate_meta_data(r.group(TWITCH))
                         self._chat_logger.log(chat_msg, meta_data)
                         if not self._log_only:
-                            if '!hello' in r.group(TEXT):
+                            if '!hello' == r.group(TEXT):
                                 self._append_send_buffer(commands.hello(r.group(USER)))
                             elif '!' == r.group(TEXT):
                                 self._append_send_buffer(commands.solid())
-                            elif '!dev' in r.group(TEXT):
+                            elif '!dev' == r.group(TEXT):
                                 self._append_send_buffer(commands.dev())
                             elif '!roll' == r.group(TEXT):
                                 self._append_send_buffer(commands.roll(r.group(USER)))
 
     def run(self):
         self._join()
-        self._chat_logger.start()
-        self._send_thread.start()
-        self._recv_thread.start()
+        self._start_threads()
         while True:
             if self._break:
                 self._socket.shutdown(SHUT_WR)
-                self._recv_thread.stop()
-                self._send_thread.stop()
-                self._chat_logger.stop()
+                self._stop_threads()
                 if self._debug:
                     print('Terminating {} bot thread.'.format(self._channel))
                 break
@@ -102,7 +113,5 @@ class ChatThread(StoppableThread, BredlBase):
             if messages_list:
                 for messages in messages_list:
                     self._process_messages(messages[-1])
-        self._recv_thread.join()
-        self._send_thread.join()
-        self._chat_logger.join()
+        self._join_threads()
         self._socket.close()

@@ -109,7 +109,7 @@ class SendThread(StoppableThread):
             self._process_send_buffer()
 
 
-WAIT_TIME_FOR_MESSAGES = 120
+WAIT_TIME_FOR_MESSAGES = 300
 
 
 class LoggerThread(StoppableThread):
