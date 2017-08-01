@@ -3,7 +3,6 @@ from time import time, sleep
 from dynopy.dynopy import DynoPy
 from dynopy.helper import dict_gen
 from datetime import datetime
-
 CHUNK_SIZE = 1024
 
 
@@ -126,7 +125,7 @@ class LoggerThread(StoppableThread):
         date = datetime.utcnow().strftime('%Y_%m_%d')
         u = 'SET logs.#d = :l, log_dates = list_append(log_dates, :d)'
         n = {'#d': date}
-        v = {':l': ['$begin'], ':d': [date]}
+        v = {':l': ['$'], ':d': [date]}
         c = 'attribute_not_exists(logs.#d)'
         response = self._aws.update('Chat', dict_gen(channel=self._channel), u, n, v, c, 'NONE')
         if self._debug:
@@ -152,7 +151,6 @@ class LoggerThread(StoppableThread):
         response = self._aws.update('Chat', dict_gen(channel=self._channel), u, n, v, c, 'NONE')
         if self._debug:
             print(response)
-
         if response['ResponseMetadata']['HTTPStatusCode'] == 400:
             self._add_today_entry()
         elif response['ResponseMetadata']['HTTPStatusCode'] == 200:
