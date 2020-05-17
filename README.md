@@ -21,5 +21,4 @@ if __name__ == '__main__':
     channel_name = 'my_username'
     bot = BredlBot(channel_name)
     bot.run()
-
 ```
