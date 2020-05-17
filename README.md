@@ -1,13 +1,12 @@
-# BredlBot [wip]
+# bredl bot (2017)
 ### A Twitch Chat Bot written in Python
 
 ## Details
 
--
+- used a custom Dynamodb lib that is no longer maintained
+- basic bot functionality
 
 ## Install
-
-#### Install *BredlBot*
 
 ```
 $ python setup.py install
@@ -24,5 +23,3 @@ if __name__ == '__main__':
     bot.run()
 
 ```
-## TODO:
-- Implement Twitch Specific Commands
